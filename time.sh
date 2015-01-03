@@ -2,7 +2,7 @@
 START=${1:-1}
 INC=${2:-1}
 FINISH=${3:-8}
-N=${4:-514}
+N=${4:-66}
 TRIALS=1
 echo "Testing with threading in range $START-$FINISH in increments of $INC for $N by $N array."
 OUTPUT="time.log"
@@ -23,8 +23,8 @@ gnuplot <<- EOF
 EOF
 
 S=$(head -1 ${OUTPUT} | awk '{print $1}')
-ST=$(grep "^$S[^0-9]" 'time.real.log' | awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }')
-echo "T(1) = $ST"
+ST=$(grep "^$S[^0-9]" ${OUTPUT} | awk '{ sum += $2; n++ } END { if (n > 0) print sum / n; }')
+echo "T(1) = ${ST}"
 gnuplot <<- EOF
     set xlabel "Threads"
     set ylabel "Speedup"
@@ -33,5 +33,5 @@ gnuplot <<- EOF
     #set term dumb
     set term png
     set output "speedup.png"
-    plot ${OUTPUT} using 1:($ST/\$2) title "(real)" smooth unique lw 3
+    plot "${OUTPUT}" using 1:($ST/\$2) title "(real)" smooth unique lw 3
 EOF
