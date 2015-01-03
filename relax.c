@@ -52,14 +52,14 @@ int relax_row(num* current, num* next, int row, int length, num precision)
 }
 
 // matptr starts at position in the array to begin sending ( ending  with + size)
-int send_row(num* matptr, int size, int to_rank) {
-  MPI_Send(matptr, size, MPI_DOUBLE, to_rank, 0, MPI_COMM_WORLD);
+int send_row(num* matptr, int size, int to_rank, int tag) {
+  MPI_Send(matptr, size, MPI_DOUBLE, to_rank, tag, MPI_COMM_WORLD);
   return 0; // TODO error check;
 }
 
 // matptr starts at position in array to start receiving from (ending with + size)
-int recv_row(num* matptr, int size, int from_rank) {
-  MPI_Recv(matptr, size, MPI_DOUBLE, from_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+int recv_row(num* matptr, int size, int from_rank, int tag) {
+  MPI_Recv(matptr, size, MPI_DOUBLE, from_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   return 0;
 }
 
@@ -115,21 +115,21 @@ num* relax(int dimension, num precision, int world_size, int rank) {
       // send data +- 1 rank
       if(up_range.from != 0) {
         // send bottom row to rank + 1
-        send_row(&(g->next[(r.to-1)*g->dimension]), g->dimension, rank+1);
+        send_row(&(g->next[(r.to-1)*g->dimension]), g->dimension, rank+1, TAG_NEIGHBOUR);
       }
       if(down_range.from != 0) {
         // send top row to rank - 1
-        send_row(&(g->next[(r.from)*g->dimension]), g->dimension, rank-1);
+        send_row(&(g->next[(r.from)*g->dimension]), g->dimension, rank-1, TAG_NEIGHBOUR);
       }
 
       // recv data +- 1 rank
       if(up_range.from != 0) {
         // recv bottom row + 1 from up
-        recv_row(&(g->next[r.to * g->dimension]), g->dimension, rank+1);
+        recv_row(&(g->next[r.to * g->dimension]), g->dimension, rank+1, TAG_NEIGHBOUR);
       }
       if (down_range.from != 0) {
         // recv top row - 1 from down
-        recv_row(&(g->next[(r.from-1) * g->dimension]), g->dimension, rank-1);
+        recv_row(&(g->next[(r.from-1) * g->dimension]), g->dimension, rank-1, TAG_NEIGHBOUR);
       }
 
       // quicker than memcpy
@@ -144,13 +144,13 @@ num* relax(int dimension, num precision, int world_size, int rank) {
 
   // slaves all send their part to master
   if(rank != MASTER) {
-    send_row(&(g->next[r.from*g->dimension]), r.size*g->dimension, MASTER);
+    send_row(&(g->next[r.from*g->dimension]), r.size*g->dimension, MASTER, TAG_FINISH);
   } else {
     // MASTER receives chunks of rows from slaves
     int i;
     for(i = MASTER+1; i < world_size; i++) {
       range slave_range = get_range(g, i);
-      recv_row(&(g->next[slave_range.from * g->dimension]), slave_range.size*g->dimension, i);
+      recv_row(&(g->next[slave_range.from * g->dimension]), slave_range.size*g->dimension, i, TAG_FINISH);
     }
   }
 
@@ -166,7 +166,7 @@ num* relax(int dimension, num precision, int world_size, int rank) {
 
   // end while and send results to master
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  //MPI_Barrier(MPI_COMM_WORLD);
 
   return g->next;
 }
