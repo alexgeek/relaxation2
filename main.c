@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 
   // Print off a hello world message
   printf("Processor %s, rank %d out of %d processors\n",
-         processor_name, world_rank, world_size);*/
+         processor_name, world_rank, world_size);
 
   num* result = relax(dimension, precision, world_size, world_rank);
 
