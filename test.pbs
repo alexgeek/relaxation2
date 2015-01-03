@@ -17,3 +17,4 @@ cd $PBS_O_WORKDIR
 module load gcc torque
 make clean
 make
+./time.sh
