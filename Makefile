@@ -2,7 +2,7 @@ CC=mpicc
 CFLAGS= -Wall -g
 LIBS=-lpthread -lm
 MAIN=relax
-SRCS=main.c matrix.c
+SRCS=main.c matrix.c relax.c
 OBJS=$(SRCS:.c=.o)
 TEST=test.sh
 

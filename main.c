@@ -1,8 +1,8 @@
 #include "mpi.h"
 #include <stdio.h>
 #include "matrix.h"
+#include "relax.h"
 
-#define MASTER 0
 #define EXIT_SUCCESS 0
 
 int main(int argc, char** argv) {
@@ -26,7 +26,9 @@ int main(int argc, char** argv) {
   printf("Hello world from processor %s, rank %d out of %d processors\n",
          processor_name, world_rank, world_size);
 
-  int out, in = 10;
+  relax(10, 0.01, world_size, world_rank);
+
+  /*int out, in = 10;
 
  	MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
@@ -42,7 +44,7 @@ int main(int argc, char** argv) {
     printf("a = %f, b = %f", a[1], b[1]);
     swap_pointers(&a, &b);
     printf("a = %f, b = %f", a[1], b[1]);
-  }
+  }*/
 
   // Finalize the MPI environment.
   MPI_Finalize();
