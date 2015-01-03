@@ -2,12 +2,41 @@
 #include <stdio.h>
 #include "matrix.h"
 #include "relax.h"
+#include <unistd.h>
 
 #define EXIT_SUCCESS 0
 
 int main(int argc, char** argv) {
   // Initialize the MPI environment
   MPI_Init(&argc, &argv);
+
+  int dimension = 10;
+  num precision = 0.01;
+  int verbose = 0;
+
+  int opt;
+  while ((opt = getopt (argc, argv, "vn:p:")) != -1)
+  {
+    switch(opt) {
+      case 'n':
+        if(sscanf(optarg, "%i", &dimension) != 1)
+          fprintf(stderr, "Invalid dimension, using default (%i).\n", dimension);
+        if(dimension < 5) {
+          fprintf(stderr, "Use a mininum dimension of 5.\n");
+        }
+        break;
+      case 'p':
+        if(sscanf(optarg, "%lf", &precision) != 1)
+          fprintf(stderr, "Invalid precision, using default (%f).\n", precision);
+        if(precision < 0) {
+          fprintf(stderr, "Precision cannot be negative.\n");
+          precision = 0.01;
+        }
+        break;
+      case 'v':
+        verbose = 1;
+    }
+  }
 
   // Get the number of processes
   int world_size;
@@ -23,28 +52,15 @@ int main(int argc, char** argv) {
   MPI_Get_processor_name(processor_name, &name_len);
 
   // Print off a hello world message
-  printf("Hello world from processor %s, rank %d out of %d processors\n",
-         processor_name, world_rank, world_size);
+  /*printf("Hello world from processor %s, rank %d out of %d processors\n",
+         processor_name, world_rank, world_size);*/
 
-  relax(10, 0.01, world_size, world_rank);
+  num* result = relax(dimension, precision, world_size, world_rank);
 
-  /*int out, in = 10;
-
- 	MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-  printf("out = %d", out);
-
-  if(world_rank == MASTER) {
-    printf("I am the master.\n");
-    int size = 5;
-    num* a = matrix_alloc_square(size);
-    num* b = matrix_alloc_square(size);
-    matrix_init_to(a, size, 0);
-    matrix_init_to(b, size, 1);
-    printf("a = %f, b = %f", a[1], b[1]);
-    swap_pointers(&a, &b);
-    printf("a = %f, b = %f", a[1], b[1]);
-  }*/
+  if(world_rank == MASTER && verbose) {
+    printf("\nFinal Results (n=%d, p=%g):\n", dimension, precision);
+    matrix_print(result, dimension);
+  }
 
   // Finalize the MPI environment.
   MPI_Finalize();

@@ -66,7 +66,7 @@ int recv_row(num* matptr, int size, int from_rank) {
 num* relax(int dimension, num precision, int world_size, int rank) {
   global* g = create_globals(dimension, precision, world_size);
   range r = get_range(g, rank);
-  printf("%d will work on [%d, %d)\n", rank, r.from, r.to);
+  //printf("%d will work on [%d, %d)\n", rank, r.from, r.to);
 
   // ranges to receive data into
   range up_range, down_range;
@@ -116,24 +116,20 @@ num* relax(int dimension, num precision, int world_size, int rank) {
       if(up_range.from != 0) {
         // send bottom row to rank + 1
         send_row(&(g->next[(r.to-1)*g->dimension]), g->dimension, rank+1);
-        //MPI_Send(&(g->next[(r.from * r.size]), r.size * g->dimension, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD);
       }
       if(down_range.from != 0) {
         // send top row to rank - 1
         send_row(&(g->next[(r.from)*g->dimension]), g->dimension, rank-1);
-        //MPI_Send(&(g->next[r.from * r.size]), r.size * g->dimension, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD);
       }
 
       // recv data +- 1 rank
       if(up_range.from != 0) {
         // recv bottom row + 1 from up
         recv_row(&(g->next[r.to * g->dimension]), g->dimension, rank+1);
-        //MPI_Recv(&(g->next[up_range.from * up_range.size]), up_range.size * g->dimension, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }
       if (down_range.from != 0) {
         // recv top row - 1 from down
         recv_row(&(g->next[(r.from-1) * g->dimension]), g->dimension, rank-1);
-        //MPI_Recv(&(g->next[down_range.from * up_range.size]), down_range.size * g->dimension, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }
 
       // quicker than memcpy
@@ -146,17 +142,16 @@ num* relax(int dimension, num precision, int world_size, int rank) {
 
   } while(!finished);
 
-  // slaves all send data to master
+  // slaves all send their part to master
   if(rank != MASTER) {
     send_row(&(g->next[r.from*g->dimension]), r.size*g->dimension, MASTER);
   } else {
+    // MASTER receives chunks of rows from slaves
     int i;
     for(i = MASTER+1; i < world_size; i++) {
       range slave_range = get_range(g, i);
       recv_row(&(g->next[slave_range.from * g->dimension]), slave_range.size*g->dimension, i);
     }
-    printf("Final result:\n");
-    matrix_print(g->next, g->dimension);
   }
 
   // MPI_barrier
