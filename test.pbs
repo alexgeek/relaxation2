@@ -17,6 +17,9 @@ cd $PBS_O_WORKDIR
 module load gcc torque
 make clean
 make
+OUTPUT=tests.log
 echo "Timing 4090x4090"
-echo (time mpirun -n 32 relax -n 4090)
+(time mpirun -n 32 relax -n 4090)  2>&1 > /dev/null | grep real | awk '{print $2}'|sed "s/^[0-9]\+m//" | xargs printf "32\t%s\n" >> $OUTPUT
+(time mpirun -n 16 relax -n 4090)  2>&1 > /dev/null | grep real | awk '{print $2}'|sed "s/^[0-9]\+m//" | xargs printf "16\t%s\n" >> $OUTPUT
+(time mpirun -n 32 relax -n 4090)  2>&1 > /dev/null | grep real | awk '{print $2}'|sed "s/^[0-9]\+m//" | xargs printf "8\t%s\n" >> $OUTPUT
 #./time.sh
